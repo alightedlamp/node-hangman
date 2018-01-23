@@ -88,7 +88,7 @@ Game.prototype.findMatches = function(guess) {
   return found;
 };
 Game.prototype.handleLoss = function() {
-  this.losses = this.losses - 1;
+  this.losses = this.losses + 1;
   this.isPlaying = false;
   console.log("\nYou're dead!!! So sad.\n");
   this.displayScore();
