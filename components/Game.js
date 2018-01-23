@@ -2,6 +2,8 @@ const inquirer = require('inquirer');
 const Word = require('./Word.js');
 const words = require('../words.js');
 
+const re = /([,\-\'\s])/g;
+
 const Game = function() {
   this.wins = 0;
   this.losses = 0;
@@ -21,7 +23,8 @@ Game.prototype.guessALetter = function() {
     .prompt([
       {
         message: 'Guess a letter',
-        name: 'guess'
+        name: 'guess',
+        validate: value => _this.validateGuess(value)
       }
     ])
     .then(response => {
@@ -33,9 +36,22 @@ Game.prototype.guessALetter = function() {
       }
     });
 };
+Game.prototype.validateGuess = function(value) {
+  if (value.length === 1) {
+    return true;
+  } else {
+    this.totalGuesses = this.totalGuesses - 1;
+    console.log(
+      `\n\nOne letter at a time, buddy. Guess again.\nAlso, you lose a guess for that. Now you have ${
+        this.totalGuesses
+      } guesses remaining.\n`
+    );
+    return false;
+  }
+};
 Game.prototype.checkGuess = function(guess) {
   if (this.guesses.indexOf(guess) !== -1) {
-    console.log('Already chosen, pick again');
+    console.log('\nAlready chosen, pick again\n');
   } else {
     this.guesses.push(guess);
     if (!this.findMatches(guess)) {
@@ -45,14 +61,18 @@ Game.prototype.checkGuess = function(guess) {
       } else {
         console.log(`\nWrong!\n\n${this.totalGuesses} guesses remaining!\n`);
       }
-    } else if (this.currentWord.blanks.join('') === this.currentWord.word) {
+    } else if (
+      this.currentWord.blanks.filter(
+        letter => letter.guessed || letter.letter.match(re)
+      ).length === this.currentWord.word.length
+    ) {
       this.handleWin();
     } else {
       console.log('\nCorrect!');
       this.currentWord.showBlanks();
     }
   }
-  return this.isPlaying;
+  return this;
 };
 Game.prototype.findMatches = function(guess) {
   let i = 0;
@@ -60,7 +80,7 @@ Game.prototype.findMatches = function(guess) {
   let testCase = this.currentWord.word.indexOf(guess, i);
 
   while (testCase !== -1) {
-    this.currentWord.blanks[testCase] = guess;
+    this.currentWord.blanks[testCase].guessed = true;
     found = true;
     i++;
     testCase = this.currentWord.word.indexOf(guess, i);
@@ -70,14 +90,20 @@ Game.prototype.findMatches = function(guess) {
 Game.prototype.handleLoss = function() {
   this.losses = this.losses - 1;
   this.isPlaying = false;
-  console.log('You dead');
+  console.log("\nYou're dead!!! So sad.\n");
+  this.displayScore();
   return this;
 };
 Game.prototype.handleWin = function() {
   this.wins = this.wins + 1;
   this.isPlaying = false;
-  console.log('\nYou win\n');
+  this.currentWord.showBlanks();
+  console.log('You win!!!\n');
+  this.displayScore();
   return this;
+};
+Game.prototype.displayScore = function() {
+  console.log(`Wins: ${this.wins}\nLosses: ${this.losses}\n`);
 };
 Game.prototype.playAgain = function() {
   const _this = this;
@@ -91,8 +117,18 @@ Game.prototype.playAgain = function() {
     ])
     .then(
       response =>
-        response.confirm ? _this.pickWord().guessALetter() : _this.endGame()
+        response.confirm
+          ? _this
+              .reset()
+              .pickWord()
+              .guessALetter()
+          : _this.endGame()
     );
+};
+Game.prototype.reset = function() {
+  this.totalGuesses = 6;
+  this.guesses = [];
+  return this;
 };
 Game.prototype.endGame = function() {
   console.log('Thanks for playing, goodbye');
