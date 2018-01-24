@@ -1,4 +1,5 @@
 const inquirer = require('inquirer');
+const colors = require('colors');
 const Word = require('./Word.js');
 const words = require('../words.js');
 
@@ -39,7 +40,7 @@ Game.prototype.guessALetter = function() {
 Game.prototype.validateGuess = function(value) {
   if (value.length === 1) {
     return true;
-  } else {
+  } else if (value.length > 1) {
     this.totalGuesses = this.totalGuesses - 1;
     console.log(
       `\n\nOne letter at a time, buddy. Guess again.\nAlso, you lose a guess for that. Now you have ${
@@ -47,11 +48,13 @@ Game.prototype.validateGuess = function(value) {
       } guesses remaining.\n`
     );
     return false;
+  } else {
+    return false;
   }
 };
 Game.prototype.checkGuess = function(guess) {
   if (this.guesses.indexOf(guess) !== -1) {
-    console.log('\nAlready chosen, pick again\n');
+    console.log('\nAlready chosen, pick again\n'.yellow);
   } else {
     this.guesses.push(guess);
     if (!this.findMatches(guess)) {
@@ -59,7 +62,9 @@ Game.prototype.checkGuess = function(guess) {
       if (this.totalGuesses === 0) {
         this.handleLoss();
       } else {
-        console.log(`\nWrong!\n\n${this.totalGuesses} guesses remaining!\n`);
+        console.log(
+          `\nWrong!\n\n${this.totalGuesses} guesses remaining!\n`.red
+        );
       }
     } else if (
       this.currentWord.blanks.filter(
@@ -90,7 +95,7 @@ Game.prototype.findMatches = function(guess) {
 Game.prototype.handleLoss = function() {
   this.losses = this.losses + 1;
   this.isPlaying = false;
-  console.log("\nYou're dead!!! So sad.\n");
+  console.log("\nYou're dead!!! So sad.\n".red);
   this.displayScore();
   return this;
 };
@@ -98,7 +103,7 @@ Game.prototype.handleWin = function() {
   this.wins = this.wins + 1;
   this.isPlaying = false;
   this.currentWord.showBlanks();
-  console.log('You win!!!\n');
+  console.log('You win!!!\n'.green);
   this.displayScore();
   return this;
 };
@@ -128,10 +133,11 @@ Game.prototype.playAgain = function() {
 Game.prototype.reset = function() {
   this.totalGuesses = 6;
   this.guesses = [];
+  this.isPlaying = true;
   return this;
 };
 Game.prototype.endGame = function() {
-  console.log('Thanks for playing, goodbye');
+  console.log('\nThanks for playing, goodbye');
 };
 
 module.exports = Game;
